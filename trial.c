@@ -4,6 +4,8 @@
 #include <string.h>
 #include <math.h>
 #include "minilibx_opengl/mlx.h"
+#include <OpenGL/gl.h>
+// #include <OpenGL/glu.h>
 
 #define W 13  //5 in linux 51
 #define D 2 // 6 in linux 53
@@ -50,11 +52,16 @@ typedef struct	s_vars
 	int			width;
 	int			height;
 	char		**map;
+	char		*addr;
+	int			bitspix;
+	int			len;
+	int			end;
 	t_player	p;
 	t_ray		r;
 	t_mouse		mouse;
 }				t_vars;
 
+void	init_window(t_vars *vars);
 
 void	ray_init(t_vars *vars)
 {
@@ -138,15 +145,203 @@ void	building_rays(t_vars *vars)
 	vars->img = mlx_xpm_file_to_image(vars->mlx, "black_bg.xpm", &vars->width, &vars->height);
 	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->r.ray_left_x, vars->r.ray_left_y);
 	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->r.ray_right_x, vars->r.ray_right_y);
-	vars->r.ray_left_x = roundf((cos(vars->r.angle_left) * 100) + vars->p.x);
-	vars->r.ray_left_y = roundf((sin(vars->r.angle_left) * 100) + vars->p.y);
-	vars->r.ray_right_x = roundf((cos(vars->r.angle_right) * 100) + vars->p.x);
-	vars->r.ray_right_y = roundf((sin(vars->r.angle_right) * 100) + vars->p.y);
-	draw_rays(vars);
+	vars->r.ray_left_x = roundf((cos(vars->r.angle_left) * 500) + vars->p.x);
+	vars->r.ray_left_y = roundf((sin(vars->r.angle_left) * 500) + vars->p.y);
+	vars->r.ray_right_x = roundf((cos(vars->r.angle_right) * 500) + vars->p.x);
+	vars->r.ray_right_y = roundf((sin(vars->r.angle_right) * 500) + vars->p.y);
+	// draw_rays(vars);
 	printf("Ray1X: %f, Ray1Y: %f, Angle Left: %f, Angle Right: %f\n", vars->r.ray_left_x,
 		vars->r.ray_left_y, vars->r.angle_left, vars->r.angle_right);
 	printf("Angle of Player: %f\n", vars->p.ang);
+	printf("PX: %f, PY: %f\n", vars->p.x, vars->p.y);
 }
+
+void	my_pixel_put(int x, int y, int rgb, t_vars *vars)
+{
+	char	*draw;
+
+	draw = vars->addr + (y * vars->len + x * (vars->bitspix / 8));
+	*(unsigned int *)draw = rgb;
+}
+
+void	draw_point(float x, float y, t_vars *vars)
+{
+	// int	i;
+	// int	j;
+
+	// j = 0;
+	// while (j < 4)
+	// {
+	// 	i = 0;
+	// 	while (i < 4)
+	// 	{
+		// mlx_pixel_put(vars->mlx, vars->win, roundf(x),
+		// 		roundf(y), 0xFF0000);
+			my_pixel_put(x, y, 0xFF0000, vars);
+		// mlx_pixel_put(vars->mlx, vars->win, roundf(x) + 1,
+		// 		roundf(y) + 1, 0x000000);
+	// 		i++;
+	// 	}
+	// 	j++;
+	// }
+}
+
+
+void	draw_line_l(t_vars *vars)
+{
+	float	slope;
+	float	incpt;
+	float	x;
+	float	y;
+
+	vars->img = mlx_new_image(vars->mlx, 1920, 1240);
+	vars->addr = mlx_get_data_addr(vars->img, &vars->bitspix, &vars->len, &vars->end);
+	slope = ((vars->p.y - vars->r.ray_left_y) / (vars->p.x - vars->r.ray_left_x));
+	incpt = vars->p.y - (slope * vars->p.x);
+	if ((vars->p.ang >= (3 * PI / 2)) && (vars->p.ang < (2 * PI)))
+	{
+		y = vars->p.y - 1;
+		x = (y - incpt) / slope;
+		// printf("x: %f, y: %f\n", x, y);
+		while (y >= 0 && y > vars->r.ray_left_y && x < 1920 && vars->r.ray_left_y < 1240)
+		{
+			draw_point(x, y, vars);
+			y--;
+			x = (y - incpt) / slope;
+		}
+	}
+	else if ((vars->p.ang >= 0) && (vars->p.ang < (PI / 2)))
+	{
+		x = vars->p.x + 1;
+		y = (slope * x) + incpt;
+		// printf("x: %f, y: %f\n", x, y);
+		while (x >= 0 && x < vars->r.ray_left_x && x < 1920 && y < 1240)
+		{
+			draw_point(x, y, vars);
+			x++;
+			y = (slope * x) + incpt;
+		}
+	}
+	else if ((vars->p.ang >= (PI / 2)) && (vars->p.ang < PI))
+	{
+		y = vars->p.y + 1;
+		x = (y - incpt) / slope;
+		// printf("x: %f, y: %f\n", x, y);
+		while (y >= 0 && y < vars->r.ray_left_y && vars->r.ray_left_x < 1920 && vars->r.ray_left_y < 1240)
+		{
+			draw_point(x, y, vars);
+			y++;
+			x = (y - incpt) / slope;
+		}
+	}
+	else if ((vars->p.ang >= PI) && (vars->p.ang < (3 * (PI / 2))))
+	{
+		x = vars->p.x - 1;
+		y = (slope * x) + incpt;
+		// printf("x: %f, y: %f\n", x, y);
+		while (x >= 0 && x > vars->r.ray_left_x && vars->r.ray_left_x < 1920 && vars->r.ray_left_y < 1240)
+		{
+			draw_point(x, y, vars);
+			x--;
+			y = (slope * x) + incpt;
+		}
+	}
+	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, 0, 0);
+	init_window(vars);
+}
+
+// void	draw_line(t_vars *vars)
+// {
+// 	float	slope;
+// 	float	intercept;
+// 	float	y;
+// 	float	x;
+// 	int		err;
+
+// 	err = 1;
+	// slope = ((vars->p.y - vars->r.ray_left_y) / (vars->p.x - vars->r.ray_left_x));
+	// intercept = vars->p.y - (slope * vars->p.x);
+// 	printf("Slope: %f, Intercept: %f\n", slope, intercept);
+// 	if (vars->r.angle_left >= 1.41 && vars->r.angle_left <= 4.788)
+// 		err *= -1;
+// 	if (err == 1)
+// 	{
+// 		/* x = vars->p.x + err;
+// 		y = (slope * x) + intercept;
+// 		while (x >= 0 && x < vars->r.ray_left_x)
+// 		{
+// 			draw_point(x, y, vars);
+// 			// draw_point(y, x, vars);
+// 			x += err;
+// 			y = (slope * x) + intercept;
+// 			// printf("x: %f, y: %f\n", x, y);
+// 		} */
+// 		x = vars->r.ray_left_x - 1;
+// 		y = (slope * x) + intercept;
+// 		// x = (y - intercept) / slope;
+// 		// y = (slope * x) + intercept;
+// 		// printf("Err: %d\n", err);
+// 		while (x >= 0 && x > vars->p.x)
+// 		{
+// 			draw_point(x, y, vars);
+// 			// draw_point(y, x, vars);
+// 			x--;
+// 			y = (slope * x) + intercept;
+			// printf("x: %f, y: %f\n", x, y);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		y = vars->p.y - 1;
+// 		x = (y - intercept) / slope;
+// 		// y = (slope * x) + intercept;
+// 		// printf("Err: %d\n", err);
+// 		while (y >= 0 && y > vars->r.ray_left_y)
+// 		{
+// 			draw_point(x, y, vars);
+// 			// draw_point(y, x, vars);
+// 			y--;
+// 			x = (y - intercept) / slope;
+// 			// printf("x: %f, y: %f\n", x, y);
+// 		}
+// 	}
+// 	/* if (vars->r.angle_left >= 1.41 && vars->r.angle_left <= 4.788)
+// 		err *= -1;
+// 	x = vars->p.x + err;
+// 	y = (slope * x) + intercept;
+// 	while (x >= 0 && x < vars->r.ray_left_x)
+// 	{
+// 		draw_point(x, y, vars);
+// 		// draw_point(y, x, vars);
+// 		x += err;
+// 		y = (slope * x) + intercept;
+// 		printf("x: %f, y: %f\n", x, y);
+// 	} */
+// 	printf("x: %f, y: %f\n", x, y);
+// }
+/* void	draw_line(t_vars *vars, int x0, int x1, int y0, int y1)
+{
+	float	dx;
+	float	dy;
+	int		p;
+
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+	p = (2*dy) - dx;
+	while (x0 < x1)
+	{
+		mlx_pixel_put(vars->mlx, vars->win, x0, y0, 0XFF0000);
+		if (p < 0)
+			p += 2*dy;
+		else
+		{
+			p += (2*dy) - 2*dx;
+			y0++;
+		}
+		x0++;
+	}
+} */
 
 void	draw_player(t_vars *vars)
 {
@@ -155,6 +350,11 @@ void	draw_player(t_vars *vars)
 
 	j = 0;
 	building_rays(vars);
+	vars->img = mlx_xpm_file_to_image(vars->mlx, "black_bg.xpm", &vars->width, &vars->height);
+	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, min(vars->r.ray_left_x, vars->p.x), min(vars->r.ray_left_y, vars->p.y));
+	draw_line_l(vars);
+	// draw_line(vars, vars->p.x, vars->r.ray_left_x, vars->r.ray_left_y, vars->p.y);
+	// draw_line(vars, vars->p.y, vars->r.ray_left_y, vars->r.ray_left_x, vars->p.x);
 	while (j < 4)
 	{
 		i = 0;
@@ -300,11 +500,12 @@ void	init(t_vars *vars)
 
 int	mouse_hook(int x, int y, t_vars *vars)
 {
+	mlx_mouse_get_pos(vars->win, &x, &y);
 	if (x < 960)
 		rotation(ARROW_L, vars);
 	else if (x > 960)
 		rotation(ARROW_R, vars);
-	printf("Mouse Coordinates: %d, %d\n", x, y);
+	// printf("Mouse Coordinates: %d, %d\n", x, y);
 	mlx_mouse_move(vars->win, 960, 620);
 	return (0);
 }
@@ -382,7 +583,7 @@ int main(void)
 	vars.mlx = mlx_init();
 	map_dup(map, &vars);
 	vars.win = mlx_new_window(vars.mlx, 1920, 1240, "Cub3D");
-	init_window(&vars);
+	// init_window(&vars);
 	draw_player(&vars);
 	mlx_hook(vars.win, 6, (1L<<6), mouse_hook, &vars);
 	mlx_hook(vars.win, 2, (1L<<0), key_hook, &vars);

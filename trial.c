@@ -56,6 +56,7 @@ typedef struct	s_vars
 	int			bitspix;
 	int			len;
 	int			end;
+	int			*map_i;
 	t_player	p;
 	t_ray		r;
 	t_mouse		mouse;
@@ -136,6 +137,11 @@ int	min(int a, int b)
 
 void	building_rays(t_vars *vars)
 {
+	int	walls;
+	// int	x;
+	// int	y;
+
+	walls = 0;
 	vars->r.angle_left = vars->p.ang - (PI / 6);
 	if (vars->r.angle_left < 0)
 		vars->r.angle_left += 2 * PI;
@@ -145,15 +151,25 @@ void	building_rays(t_vars *vars)
 	vars->img = mlx_xpm_file_to_image(vars->mlx, "black_bg.xpm", &vars->width, &vars->height);
 	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->r.ray_left_x, vars->r.ray_left_y);
 	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->r.ray_right_x, vars->r.ray_right_y);
-	vars->r.ray_left_x = roundf((cos(vars->r.angle_left) * 500) + vars->p.x);
-	vars->r.ray_left_y = roundf((sin(vars->r.angle_left) * 500) + vars->p.y);
-	vars->r.ray_right_x = roundf((cos(vars->r.angle_right) * 500) + vars->p.x);
-	vars->r.ray_right_y = roundf((sin(vars->r.angle_right) * 500) + vars->p.y);
-	// draw_rays(vars);
-	printf("Ray1X: %f, Ray1Y: %f, Angle Left: %f, Angle Right: %f\n", vars->r.ray_left_x,
-		vars->r.ray_left_y, vars->r.angle_left, vars->r.angle_right);
-	printf("Angle of Player: %f\n", vars->p.ang);
-	printf("PX: %f, PY: %f\n", vars->p.x, vars->p.y);
+	// while (!walls)
+	// {
+		vars->r.ray_left_x += roundf((cos(vars->r.angle_left) * 5) + vars->p.x);
+		vars->r.ray_left_y += roundf((sin(vars->r.angle_left) * 5) + vars->p.y);
+		vars->r.ray_right_x += roundf((cos(vars->r.angle_right) * 5) + vars->p.x);
+		vars->r.ray_right_y += roundf((sin(vars->r.angle_right) * 5) + vars->p.y);
+		// x = (int)vars->r.ray_left_x / 240;
+		// y = (int)vars->r.ray_left_y / 155;
+		// if (vars->map[y][x] == '1')
+		// 	walls = 1;
+		// x = (int)vars->r.ray_right_x / 240;
+		// y = (int)vars->r.ray_right_y / 155;
+		// if (vars->map[y][x] == '1')
+		// 	walls = 1;
+	// }
+	// printf("Ray1X: %d, Ray1Y: %d, Angle Left: %f, Angle Right: %f\n", x,
+	// 	y, vars->r.angle_left, vars->r.angle_right);
+	// printf("Angle of Player: %f\n", vars->p.ang);
+	// printf("PX: %f, PY: %f\n", vars->p.x, vars->p.y);
 }
 
 void	my_pixel_put(int x, int y, int rgb, t_vars *vars)
@@ -166,24 +182,8 @@ void	my_pixel_put(int x, int y, int rgb, t_vars *vars)
 
 void	draw_point(float x, float y, t_vars *vars)
 {
-	// int	i;
-	// int	j;
-
-	// j = 0;
-	// while (j < 4)
-	// {
-	// 	i = 0;
-	// 	while (i < 4)
-	// 	{
-		// mlx_pixel_put(vars->mlx, vars->win, roundf(x),
-		// 		roundf(y), 0xFF0000);
-			my_pixel_put(x, y, 0xFF0000, vars);
-		// mlx_pixel_put(vars->mlx, vars->win, roundf(x) + 1,
-		// 		roundf(y) + 1, 0x000000);
-	// 		i++;
-	// 	}
-	// 	j++;
-	// }
+	if (x < 1921 && x >= 0 && y >= 0 && y < 1241)
+		my_pixel_put(x, y, 0xFF0000, vars);
 }
 
 
@@ -202,7 +202,6 @@ void	draw_line_l(t_vars *vars)
 	{
 		y = vars->p.y - 1;
 		x = (y - incpt) / slope;
-		// printf("x: %f, y: %f\n", x, y);
 		while (y >= 0 && y > vars->r.ray_left_y && x < 1920 && vars->r.ray_left_y < 1240)
 		{
 			draw_point(x, y, vars);
@@ -214,7 +213,6 @@ void	draw_line_l(t_vars *vars)
 	{
 		x = vars->p.x + 1;
 		y = (slope * x) + incpt;
-		// printf("x: %f, y: %f\n", x, y);
 		while (x >= 0 && x < vars->r.ray_left_x && x < 1920 && y < 1240)
 		{
 			draw_point(x, y, vars);
@@ -226,7 +224,6 @@ void	draw_line_l(t_vars *vars)
 	{
 		y = vars->p.y + 1;
 		x = (y - incpt) / slope;
-		// printf("x: %f, y: %f\n", x, y);
 		while (y >= 0 && y < vars->r.ray_left_y && vars->r.ray_left_x < 1920 && vars->r.ray_left_y < 1240)
 		{
 			draw_point(x, y, vars);
@@ -238,7 +235,6 @@ void	draw_line_l(t_vars *vars)
 	{
 		x = vars->p.x - 1;
 		y = (slope * x) + incpt;
-		// printf("x: %f, y: %f\n", x, y);
 		while (x >= 0 && x > vars->r.ray_left_x && vars->r.ray_left_x < 1920 && vars->r.ray_left_y < 1240)
 		{
 			draw_point(x, y, vars);
@@ -250,108 +246,36 @@ void	draw_line_l(t_vars *vars)
 	init_window(vars);
 }
 
-// void	draw_line(t_vars *vars)
-// {
-// 	float	slope;
-// 	float	intercept;
-// 	float	y;
-// 	float	x;
-// 	int		err;
-
-// 	err = 1;
-	// slope = ((vars->p.y - vars->r.ray_left_y) / (vars->p.x - vars->r.ray_left_x));
-	// intercept = vars->p.y - (slope * vars->p.x);
-// 	printf("Slope: %f, Intercept: %f\n", slope, intercept);
-// 	if (vars->r.angle_left >= 1.41 && vars->r.angle_left <= 4.788)
-// 		err *= -1;
-// 	if (err == 1)
-// 	{
-// 		/* x = vars->p.x + err;
-// 		y = (slope * x) + intercept;
-// 		while (x >= 0 && x < vars->r.ray_left_x)
-// 		{
-// 			draw_point(x, y, vars);
-// 			// draw_point(y, x, vars);
-// 			x += err;
-// 			y = (slope * x) + intercept;
-// 			// printf("x: %f, y: %f\n", x, y);
-// 		} */
-// 		x = vars->r.ray_left_x - 1;
-// 		y = (slope * x) + intercept;
-// 		// x = (y - intercept) / slope;
-// 		// y = (slope * x) + intercept;
-// 		// printf("Err: %d\n", err);
-// 		while (x >= 0 && x > vars->p.x)
-// 		{
-// 			draw_point(x, y, vars);
-// 			// draw_point(y, x, vars);
-// 			x--;
-// 			y = (slope * x) + intercept;
-			// printf("x: %f, y: %f\n", x, y);
-// 		}
-// 	}
-// 	else
-// 	{
-// 		y = vars->p.y - 1;
-// 		x = (y - intercept) / slope;
-// 		// y = (slope * x) + intercept;
-// 		// printf("Err: %d\n", err);
-// 		while (y >= 0 && y > vars->r.ray_left_y)
-// 		{
-// 			draw_point(x, y, vars);
-// 			// draw_point(y, x, vars);
-// 			y--;
-// 			x = (y - intercept) / slope;
-// 			// printf("x: %f, y: %f\n", x, y);
-// 		}
-// 	}
-// 	/* if (vars->r.angle_left >= 1.41 && vars->r.angle_left <= 4.788)
-// 		err *= -1;
-// 	x = vars->p.x + err;
-// 	y = (slope * x) + intercept;
-// 	while (x >= 0 && x < vars->r.ray_left_x)
-// 	{
-// 		draw_point(x, y, vars);
-// 		// draw_point(y, x, vars);
-// 		x += err;
-// 		y = (slope * x) + intercept;
-// 		printf("x: %f, y: %f\n", x, y);
-// 	} */
-// 	printf("x: %f, y: %f\n", x, y);
-// }
-/* void	draw_line(t_vars *vars, int x0, int x1, int y0, int y1)
-{
-	float	dx;
-	float	dy;
-	int		p;
-
-
-	dx = x1 - x0;
-	dy = y1 - y0;
-	p = (2*dy) - dx;
-	while (x0 < x1)
-	{
-		mlx_pixel_put(vars->mlx, vars->win, x0, y0, 0XFF0000);
-		if (p < 0)
-			p += 2*dy;
-		else
-		{
-			p += (2*dy) - 2*dx;
-			y0++;
-		}
-		x0++;
-	}
-} */
-
 void	draw_player(t_vars *vars)
 {
 	int	i;
 	int	j;
 
 	j = 0;
+	i = 0;
+	if (vars->p.x < 0 && vars->p.y < 0)
+	{
+		while (vars->map[i] != NULL)
+		{
+			j = 0;
+			while (vars->map[i][j])
+			{
+				// printf("%c", vars->map[i][j]);
+				if (vars->map[i][j] == 'P')
+					break;
+				j++;
+			}
+			if (vars->map[i][j] == 'P')
+				break;
+			i++;
+		}
+		vars->p.x = 240 * j + 120;
+		vars->p.y = 155 * i + (155 / 2);
+	}
+	j = 0;
 	building_rays(vars);
 	vars->img = mlx_xpm_file_to_image(vars->mlx, "black_bg.xpm", &vars->width, &vars->height);
-	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, min(vars->r.ray_left_x, vars->p.x), min(vars->r.ray_left_y, vars->p.y));
+	mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->p.x, vars->p.y);
 	draw_line_l(vars);
 	// draw_line(vars, vars->p.x, vars->r.ray_left_x, vars->r.ray_left_y, vars->p.y);
 	// draw_line(vars, vars->p.y, vars->r.ray_left_y, vars->r.ray_left_x, vars->p.x);
@@ -370,17 +294,40 @@ void	draw_player(t_vars *vars)
 
 void	raycasting_up(t_vars *vars)
 {
+	int	j;
+	int	i;
 	if (((vars->p.x + cos(vars->p.ang) * 15) > 0)
 		&& ((vars->p.x + cos(vars->p.ang) * 15) < 1920)
 		&& ((vars->p.y + sin(vars->p.ang) * 15) > 0)
 		&& ((vars->p.y + sin(vars->p.ang) * 15) < 1240))
 	{
+		j = (int)((vars->p.x - 120) / 240);
+		i = (int)((vars->p.y - (155 / 2)) / 155);
+		vars->map[i][j] = '0';
+		printf("i: %d, j: %d\n", i, j);
 		vars->img = mlx_xpm_file_to_image(vars->mlx, "black_bg.xpm", &vars->width, &vars->height);
 		mlx_put_image_to_window(vars->mlx, vars->win, vars->img, vars->p.x, vars->p.y);
-		vars->p.dx = cos(vars->p.ang) * 15;
-		vars->p.dy = sin(vars->p.ang) * 15;
+		vars->p.dx = cos(vars->p.ang) * 5;
+		vars->p.dy = sin(vars->p.ang) * 5;
+		// printf("Change in x: %f, Change in y: %f\n", vars->p.dx, vars->p.dy);
 		vars->p.x += vars->p.dx;
 		vars->p.y += vars->p.dy;
+		j = (int)((vars->p.x - 120) / 240);
+		i = (int)((vars->p.y - (155 / 2)) / 155);
+		if (((vars->p.x - 120) / 240) == j && ((vars->p.y - (155 / 2)) / 155) == i)
+		{
+			if (vars->map[i][j] == '1')
+			{
+				vars->p.x -= vars->p.dx;
+				vars->p.y -= vars->p.dy;
+			}
+			else
+				vars->map[i][j] = 'P';
+			printf("Check\n");
+		}
+		printf("Char: %c\n", vars->map[i][j]);
+		printf("Row: %d, Col: %d\n", j, i);
+		printf("X_Co: %f, Y_Co: %f\n", ((vars->p.x - 120) / 240), ((vars->p.y - (155 / 2)) / 155));
 		draw_player(vars);
 	}
 }
@@ -489,8 +436,8 @@ int	key_hook(int keycode, t_vars *vars)
 
 void	init(t_vars *vars)
 {
-	vars->p.x = 300;
-	vars->p.y = 300;
+	vars->p.x = -1;
+	vars->p.y = -1;
 	vars->p.dx = 0;
 	vars->p.dy = 0;
 	vars->p.ang = 3 * (PI / 2);
@@ -561,7 +508,6 @@ void	init_window(t_vars *vars)
 	}
 }
 
-
 // mouse
 int main(void)
 {
@@ -571,10 +517,10 @@ int main(void)
 	init(&vars);
 	map = (char **)malloc(sizeof(char *) * 9);
 	map[0] = strdup("11111111");
-	map[1] = strdup("10000001");
-	map[2] = strdup("10000001");
-	map[3] = strdup("10000001");
-	map[4] = strdup("10000001");
+	map[1] = strdup("10100001");
+	map[2] = strdup("11100001");
+	map[3] = strdup("10010001");
+	map[4] = strdup("100P0001");
 	map[5] = strdup("10000001");
 	map[6] = strdup("10000001");
 	map[7] = strdup("11111111");
@@ -583,7 +529,7 @@ int main(void)
 	vars.mlx = mlx_init();
 	map_dup(map, &vars);
 	vars.win = mlx_new_window(vars.mlx, 1920, 1240, "Cub3D");
-	// init_window(&vars);
+	init_window(&vars);
 	draw_player(&vars);
 	mlx_hook(vars.win, 6, (1L<<6), mouse_hook, &vars);
 	mlx_hook(vars.win, 2, (1L<<0), key_hook, &vars);
